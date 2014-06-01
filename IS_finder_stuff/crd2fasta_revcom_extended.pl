@@ -11,7 +11,9 @@ open FH, "<", $alls;
 my @crds=glob "$suffix/*.crd";
 my @coords_2try;
 map{$_=~s/\.$suffix\.crd//} @crds;
-#print @crds;
+map{$_=~s/$suffix\///} @crds;
+map {print "$_\n"} @crds;
+#exit;
 my %data;
 my $i=0;
 while(<FH>){
@@ -22,8 +24,6 @@ while(<FH>){
 	my $end=$fields[2];
 	my $end_other=$fields[3];
 	my $name=$fields[5];
-	#push(@{$coords{$start}},$name);
-	#push(@{$coords{}{$end}});
 	push (@coords_2try,[$start_other,$start,$end,$end_other,$name]);
 }
 close FH;
@@ -65,7 +65,7 @@ for my $key (keys %sequences){
 	my $seq=new_sequence(join("",@{$sequences{$key}}),$key);
 	push(@aln_sq,$seq);
 }
-write_sequence(">all.nuc.fasta","fasta",@aln_sq);
+write_sequence(">$suffix/all.nuc.fasta","fasta",@aln_sq);
 
 sub correct_coord{
 	my $start=shift;
