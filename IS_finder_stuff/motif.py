@@ -1,9 +1,9 @@
-!#/usr/bin/python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 import glob
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
+#import matplotlib.pyplot as plt
+#import numpy as np
+#import pandas as pd
 import os
 from Bio import SeqIO
 coords={"starts":[],"ends":[]}
@@ -16,7 +16,7 @@ for path in glob.glob("CTRI-2.Russia.CP002992/*.crd"):
 	coords["ends"]=coords["ends"]+ends["ends"]
 
 for seq in SeqIO.parse("/home/ivars/Data/Mtb/references/no_IS/CTRI-2.Russia.CP002992_clean.fasta","fasta"):
-	#print seq.id
+	print seq.id
 tsds=[]
 for i in range(0, len(coords["starts"])):
 	tsds.append( seq.seq.tostring()[coords["starts"][i]:coords["ends"][i]])
@@ -26,10 +26,31 @@ string_stats=dict()
 for i in range(0, max_len):
 	string_stats[i]={"A":0,"T":0,"G":0,"C":0}
 
+counts=collections.Counter([len(x) for x in tsds])
+
 for tsd in tsds:
 	for i in range(0,len(tsd)):
 		string_stats[i][tsd[i]]+=1
-		print string_stats
+		#print string_stats
+
+ref_stats=get_string_stats(sequence)
+summa=ref_stats["A"]+ref_stats["T"]+ref_stats["C"]+ref_stats["G"]
+for nuc in ref_stats.keys():
+    print nuc+":"+str(ref_stats[nuc]/float(summa))
+
+for i in range(0,max_len):
+	summa=string_stats[i]["A"]+string_stats[i]["T"]+string_stats[i]["C"]+string_stats[i]["G"]
+	for nuc in string_stats[i].keys():
+		print nuc+str(i)+":"+str(string_stats[i][nuc]/float(summa))
+
+
+
+def get_string_stats(sequence):
+	string_stats={"A":0,"T":0,"G":0,"C":0}
+	for i in sequence:
+		string_stats[i]+=1
+	return string_stats
+	
 def get_overlaps(crd_file):
 	coords=dict()
 	coords["starts"]=[]
