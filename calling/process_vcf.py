@@ -14,26 +14,40 @@ for name in names_uniq:
 	sam=read_vcf(name+".samtools.vcf")
 	gatk=read_vcf(name+".gatk_ug.vcf")
 	varscan=read_vcf(name+".varscan.vcf")
-	vs_homs=[x for x in varscan if x.INFO["HOM"]==1]
+	print "homozigosity filtering for" + name
+	vs_homs=[x for x in varscan[:] if x.INFO["HOM"]==1]
 	#filtrs pec coverage un homozigotates
-	gatk_homs=info_cover_filter(gatk,cover_thresh)
-	sam_homs=info_cover_filter([x for x in sam if x.samples[0]["GT"]=="1/1"],cover_thresh)
-	varscan_homs=cover_filter([x for x in varscan if x.INFO["HOM"]==1], cover_thresh)
-	gatk_final=keep_regs(filter_regs(gatk_homs, reg1),reg2)
-	sam_final=keep_regs(filter_regs(gatk_homs, reg1), reg2)
-	varscan_final=keep_regs(filter_regs(vs_homs, reg1),reg2)
+	
+	gatk_homs=info_cover_filter(gatk[:],cover_thresh)
+	sam_homs=info_cover_filter([x for x in sam[:] if x.samples[0]["GT"]=="1/1"],cover_thresh)
+	varscan_homs=cover_filter([x for x in varscan[:] if x.INFO["HOM"]==1], cover_thresh)
+
+	#starp snpcalleriem kopejie snp
+	print "common snp filtering for" + name
+	common_2gatk=common_2snps(gatk_homs[:],sam_homs)
+	common_3gatk=common_3snps(gatk_homs[:],sam_homs,varscan_homs)
+	#filtrs pec regioniem
+	print "region filtering for" + name
+	common_2gatk_final=keep_regs(filter_regs(common_2gatk[:], reg1),reg2)
+	common_3gatk_final=keep_regs(filter_regs(common_3gatk[:], reg1),reg2)
+	print "writing vcf for" + name
+	write_vcf("filtered_gatk_sam/"+name+".gatk_sam.vcf",name+".gatk_ug.vcf",common_2gatk_final)
+	write_vcf("filtered_gatk_sam_varscan/"+name+".gatk_sam_varscan.vcf",name+".gatk_ug.vcf",common_3gatk_final)
 
 def filter_regs(snps, regs):
-	good_snps=snps
+	#good_snps=snps
+	bad_indexes=[]
 	is_in_region=0	
-	for snp in good_snps:
+	for snp_index in range(0, len(snps)): #good_snps:
 		for i in range(0, len(regs["start"])):
-			if snp.POS >= regs["start"][i] and snp.POS<=regs["end"][i]:
-				is_in_region=1
-		if is_in_region==1:
-			good_snps.remove(snp)
-			is_in_region=0
-	return good_snps
+			if snps[snp_index].POS >= regs["start"][i] and snps[snp_index].POS<=regs["end"][i]:
+				bad_indexes.append(snp_index)
+				continue		
+	for idx in sorted(set(bad_indexes),reverse=True):
+		print "removing "+ str(snps[idx].POS)
+		snps.remove(snps[idx])
+	return snps
+
 def keep_regs(snps, regs):
 	good_snps=[]
 	is_in_region=0	
@@ -41,7 +55,9 @@ def keep_regs(snps, regs):
 		for i in range(0, len(regs["start"])):
 			if snp.POS >= regs["start"][i] and snp.POS<=regs["end"][i]:
 				is_in_region=1
+				continue
 		if is_in_region==1:
+			print "keeping "+str(snp.POS)
 			good_snps.append(snp)
 			is_in_region=0
 	return good_snps
