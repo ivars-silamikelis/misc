@@ -2,38 +2,7 @@ import vcf
 import numpy as np
 import pandas as pd
 import glob
-
-reg1=pd.read_table("rep_ppe_reg.txt")
-reg2=pd.read_table("all.txt")
-cover_thresh=10
-saraksts=glob.glob("*.vcf")
-names_pop=[x.replace(".samtools.vcf","").replace(".gatk_ug.vcf","").replace(".varscan.vcf","") for x in saraksts]
-names_uniq=set(names_pop)
-for name in names_uniq:
-	print name
-	sam=read_vcf(name+".samtools.vcf")
-	gatk=read_vcf(name+".gatk_ug.vcf")
-	varscan=read_vcf(name+".varscan.vcf")
-	print "homozigosity filtering for" + name
-	vs_homs=[x for x in varscan[:] if x.INFO["HOM"]==1]
-	#filtrs pec coverage un homozigotates
-	
-	gatk_homs=info_cover_filter(gatk[:],cover_thresh)
-	sam_homs=info_cover_filter([x for x in sam[:] if x.samples[0]["GT"]=="1/1"],cover_thresh)
-	varscan_homs=cover_filter([x for x in varscan[:] if x.INFO["HOM"]==1], cover_thresh)
-
-	#starp snpcalleriem kopejie snp
-	print "common snp filtering for" + name
-	common_2gatk=common_2snps(gatk_homs[:],sam_homs)
-	common_3gatk=common_3snps(gatk_homs[:],sam_homs,varscan_homs)
-	#filtrs pec regioniem
-	print "region filtering for" + name
-	common_2gatk_final=keep_regs(filter_regs(common_2gatk[:], reg1),reg2)
-	common_3gatk_final=keep_regs(filter_regs(common_3gatk[:], reg1),reg2)
-	print "writing vcf for" + name
-	write_vcf("filtered_gatk_sam/"+name+".gatk_sam.vcf",name+".gatk_ug.vcf",common_2gatk_final)
-	write_vcf("filtered_gatk_sam_varscan/"+name+".gatk_sam_varscan.vcf",name+".gatk_ug.vcf",common_3gatk_final)
-
+import sys
 def filter_regs(snps, regs):
 	#good_snps=snps
 	bad_indexes=[]
@@ -99,4 +68,35 @@ def qual_filter(vcf_cont, qual_thresh):
         if rec.QUAL>=qual_thresh:
             good_vcf.append(rec)
     return good_vcf
+
+reg1=pd.read_table("rep_ppe_reg.txt")
+reg2=pd.read_table("all.txt")
+cover_thresh=10
+#saraksts=glob.glob("*.vcf")
+#names_pop=[x.replace(".samtools.vcf","").replace(".gatk_ug.vcf","").replace(".varscan.vcf","") for x in saraksts]
+#names_uniq=set(names_pop)
+#for name in names_uniq:
+name=sys.argv[1]
+sam=read_vcf(name+".samtools.vcf")
+gatk=read_vcf(name+".gatk_ug.vcf")
+varscan=read_vcf(name+".varscan.vcf")
+print "homozigosity filtering for" + name
+vs_homs=[x for x in varscan[:] if x.INFO["HOM"]==1]
+#filtrs pec coverage un homozigotates
+
+gatk_homs=info_cover_filter(gatk[:],cover_thresh)
+sam_homs=info_cover_filter([x for x in sam[:] if x.samples[0]["GT"]=="1/1"],cover_thresh)
+varscan_homs=cover_filter([x for x in varscan[:] if x.INFO["HOM"]==1], cover_thresh)
+	#starp snpcalleriem kopejie snp
+print "common snp filtering for" + name
+common_2gatk=common_2snps(gatk_homs[:],sam_homs)
+common_3gatk=common_3snps(gatk_homs[:],sam_homs,varscan_homs)
+#filtrs pec regioniem
+print "region filtering for" + name
+common_2gatk_final=keep_regs(filter_regs(common_2gatk[:], reg1),reg2)
+common_3gatk_final=keep_regs(filter_regs(common_3gatk[:], reg1),reg2)
+print "writing vcf for" + name
+write_vcf("filtered_gatk_sam/"+name+".gatk_sam.vcf",name+".gatk_ug.vcf",common_2gatk_final)
+write_vcf("filtered_gatk_sam_varscan/"+name+".gatk_sam_varscan.vcf",name+".gatk_ug.vcf",common_3gatk_final)
+
 
