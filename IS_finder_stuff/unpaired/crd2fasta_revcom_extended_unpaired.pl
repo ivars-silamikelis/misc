@@ -3,14 +3,19 @@ use strict;
 use warnings;
 use Bio::Perl;
 use Data::Dumper;
-my @crds=glob "*.crd";
 my %coords;
+my $suffix=shift;
+my $alls=shift;
+open FH, "<", $alls;
+my @crds=glob "$suffix/*.crd";
 my @coords_2try;
-map{$_=~s/\.CTRI-2.Russia.CP002992.crd//} @crds;
+map{$_=~s/\.$suffix\.crd//} @crds;
+map{$_=~s/$suffix\///} @crds;
+map {print "$_\n"} @crds;
 #print @crds;
 my %data;
 my $i=0;
-while(<>){
+while(<FH>){
 	chomp($_);
 	my @fields=split("\t",$_);
 	my $end=$fields[0];
@@ -21,6 +26,7 @@ while(<>){
 	#push(@{$coords{}{$end}});
 	push (@coords_2try,[$coord, $coord_other,$name, $end]);
 }
+close FH;
 #Ja starta koordinātes frekvence mazāka par beigu koordinātes frekvenci, tad izmanto beigu koordināti
 
 for my $record (@coords_2try){
@@ -64,7 +70,7 @@ for my $key (keys %sequences){
 	my $seq=new_sequence(join("",@{$sequences{$key}}),$key);
 	push(@aln_sq,$seq);
 }
-write_sequence(">all.nuc.fasta","fasta",@aln_sq);
+write_sequence(">$suffix/all.nuc.fasta","fasta",@aln_sq);
 
 sub correct_coord{
 	my $start=shift;
