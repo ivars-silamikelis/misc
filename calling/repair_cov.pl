@@ -4,7 +4,7 @@ use warnings;
 my $fname=shift;
 open FH ,"<", $fname or die "No such file\n";
 $name=~s/\.cov$//;
-open OUT,">", "repaired/$fname.repaired.cov";
+open OUT,">", "$fname.repaired.cov";
 while (<FH>){
 	chomp($_);
 	my @fields=split("\t",$_);
