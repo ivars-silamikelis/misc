@@ -3,7 +3,7 @@ use strict;
 use warnings;
 my $fname=shift;
 open FH ,"<", $fname or die "No such file\n";
-$fname=~s/\.cov$//;
+$name=~s/\.cov$//;
 open OUT,">", "$fname.repaired.cov";
 while (<FH>){
 	chomp($_);
