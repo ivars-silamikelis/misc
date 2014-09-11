@@ -7,6 +7,10 @@ use Statistics::Descriptive;
 my @dels=( );
 my @inserts= ( );
 my $snp_pos_on_ref = shift;	#C
+my $ref_base = shift;
+my $chrom = shift;
+my @SNPs;
+my @alt_snps;
 open BAM,"<",$ARGV[0];
 my $depth=0;
 while(<BAM>){
@@ -70,28 +74,50 @@ while(<BAM>){
 	}
 
 	#TODO  nepraktiski ilgi katru bam failu atsevišķi ģenerēt
+	#apkopo informāciju par snp un indeliem
 	$snp_pos_on_read+=$indels_so_far{"I"}-$indels_so_far{"D"};
 	my $read = $fields[9];
-	my $SNP = substr $read, ($snp_pos_on_read-1), 1;
 	if ($indels_so_far{"cigar"} && ($indels_so_far{"cigar"}=~/D/)){
 		$indels_so_far{"cigar"}=~s/D//;
 	    push @dels, $indels_so_far{"cigar"}; 
-#		print $SNP,"\n";
 	} elsif ($indels_so_far{"cigar"} && ($indels_so_far{"cigar"}=~/I/)){
 		$indels_so_far{"cigar"}=~s/I//;
 		push @inserts, $indels_so_far{"cigar"};
+	} else {
+		my $SNP = substr $read, ($snp_pos_on_read-1), 1;
+		push @SNPs, $SNP;
 	}
-	#print $indels_so_far{"cigar"},"\n";
 }
 close BAM;
+for my $snp (@SNPs){
+	if (length $ref_base == 1 && length $snp == 1){
+		if ($snp ne $ref_base){
+			push @alt_snps,$snp;
+		}
+	}
+}
+#map {print $_,"\t",$ref_base,"\n"} @alt_snps;
+#print "chr\tpos\tsnp_baf\tdel_baf\tdel_varw\tins_baf\tins_varw\n";
+print $chrom,"\t",$snp_pos_on_ref;
+if (scalar @alt_snps > 0){
+	#my @snp_length = map {length $_} @alt_snps;
+	my $stat = Statistics::Descriptive::Full->new();
+	#$stat->add_data(\@snp_length);
+	print "\t",((scalar @alt_snps)/$depth);
+} else {
+	print "\t0";
+}
 if (scalar @dels > 0){
 	my $stat = Statistics::Descriptive::Full->new();
 	$stat->add_data(\@dels);
-	print "BAF and Variance of Deletion size:\t",$snp_pos_on_ref,"\t",(scalar @dels)/$depth,"\t",$stat->variance(),"\n";
+	print "\t",((scalar @dels)/$depth),"\t",$stat->variance();
+} else {
+	print "\t0\t0";
 }
-
 if (scalar @inserts > 0) {
 	my $stat = Statistics::Descriptive::Full->new();
 	$stat->add_data(\@inserts);
-	print "BAF and Variance of Insertion size:\t",$snp_pos_on_ref,"\t",(scalar @inserts)/$depth,"\t",$stat->variance(),"\n";
+	print "\t",(scalar @inserts)/$depth,"\t",$stat->variance(),"\n";
+} else {
+	print "\t0\t0\n";
 }
