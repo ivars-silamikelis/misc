@@ -19,3 +19,5 @@ while(<VCF>){
 	system("perl from_bam.pl $pos $ref_base $fields[0] $vcfname.tmp.sam");
 
 }
+close VCF;
+exit;

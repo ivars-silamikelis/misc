@@ -16,6 +16,6 @@ while(<VCF>){
 	my $ref_base=$fields[3];
 	#print $pos,"\n";
 	system("samtools view -F 1024 -f ~/Data/Act/references/TCDC-AB0715/TCDC-AB0715.fasta ~/Data/Act/data/aln/a-2885-12.sorted.reheaded.marked.realigned.bam -L $vcfname.bed >$vcfname.tmp.sam");
-	system("perl from_bam.pl $pos $ref_base $fields[0] tmp.sam");
+	system("perl from_bam.pl $pos $ref_base $fields[0] $vcfname.tmp.sam");
 
 }
